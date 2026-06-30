@@ -1,3 +1,33 @@
 import { readFileSync } from 'node:fs';
-for (const file of ['index.html', 'src/main.js', 'src/styles.css']) readFileSync(file, 'utf8');
-console.log('Static app files are present and readable.');
+
+const files = Object.fromEntries(
+  ['index.html', 'src/main.js', 'src/styles.css'].map(file => [file, readFileSync(file, 'utf8')])
+);
+
+for (const [file, contents] of Object.entries(files)) {
+  if (!contents.trim()) throw new Error(`${file} is empty.`);
+}
+
+const appSource = files['src/main.js'];
+const styleSource = files['src/styles.css'];
+
+for (const expected of [
+  'Sandbox Home',
+  'Job Search App',
+  '#/job-search',
+  'renderShell',
+  'renderHome',
+  'renderJobSearchApp'
+]) {
+  if (!appSource.includes(expected)) {
+    throw new Error(`Missing sandbox behavior marker: ${expected}`);
+  }
+}
+
+for (const expected of ['sandboxShell', 'sidebar', 'appPill']) {
+  if (!styleSource.includes(expected)) {
+    throw new Error(`Missing sandbox layout style: ${expected}`);
+  }
+}
+
+console.log('Static sandbox app files are present and readable.');
