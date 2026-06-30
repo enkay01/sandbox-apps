@@ -1,1 +1,10 @@
-{"scripts":{"dev":"python3 -m http.server 5173","build":"node scripts/check-app.mjs","preview":"python3 -m http.server 4173"},"dependencies":{},"devDependencies":{}}
+{
+  "scripts": {
+    "dev": "python3 -m http.server 5173",
+    "build": "node scripts/check-app.mjs && node scripts/build-pages.mjs",
+    "preview": "python3 -m http.server 4173",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
