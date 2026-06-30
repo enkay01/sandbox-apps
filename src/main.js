@@ -4,6 +4,7 @@ let brief = { industry: 'Transport technology', location: 'United Kingdom', obje
 let companies = starterCompanies;
 let jsonText = JSON.stringify(starterCompanies, null, 2);
 let message = '';
+let selectedCompanyIndex = 0;
 
 const app = document.getElementById('app');
 const sandboxApps = [
@@ -39,14 +40,52 @@ function renderHome() {
 }
 
 function renderJobSearchApp() {
-  return `<section class="hero"><div><p class="eyebrow">Job Search App</p><h1>Find, structure, and review matching companies</h1><p>Describe an industry, location, and objectives. Copy the generated research prompt to Codex, paste its JSON back here, then browse, edit, and export the company list.</p></div></section>
-  <section class="grid two"><div class="panel"><h2>Research brief</h2>${briefFields()}</div><div class="panel"><h2>Codex prompt</h2><textarea class="prompt" readonly>${esc(promptText())}</textarea><div class="actions"><button data-action="copyPrompt">Copy prompt</button><button data-action="syncJson">Sync JSON editor</button></div>${message ? `<p class="message">${esc(message)}</p>` : ''}</div></section>
-  <section class="panel"><h2>Paste researched JSON</h2><textarea class="jsonbox" id="jsonText">${esc(jsonText)}</textarea><div class="actions"><button data-action="importJson">Import JSON</button><button data-action="downloadJson">Download JSON</button><button data-action="copyJson">Copy current JSON</button></div></section>
-  <section class="toolbar"><h2>Company results (${companies.length})</h2><button data-action="addCompany">Add company</button></section><section class="cards">${companies.map(companyCard).join('')}</section>`;
+  if (selectedCompanyIndex >= companies.length) selectedCompanyIndex = Math.max(0, companies.length - 1);
+  return `<section class="hero"><div><p class="eyebrow">Job Search App</p><h1>Company research without the spreadsheet squint</h1><p>Generate a research prompt, paste Codex results, then read each imported company in a calm review layout with source links you can open or copy.</p></div></section>
+  <section class="grid two setupGrid"><div class="panel promptPanel"><h2>Generate research prompt</h2><p class="panelIntro">Edit the brief when needed, then generate a prompt for Codex.</p><details class="briefPanel"><summary>Edit research brief</summary>${briefFields()}</details><textarea class="prompt" readonly>${esc(promptText())}</textarea><div class="actions"><button data-action="copyPrompt">Generate prompt</button></div>${message ? `<p class="message">${esc(message)}</p>` : ''}</div>
+  <div class="panel importPanel"><h2>Paste Codex results</h2><p class="panelIntro">Paste the JSON array returned by Codex, then import it into the review workspace.</p><textarea class="jsonbox" id="jsonText">${esc(jsonText)}</textarea><div class="actions"><button data-action="importJson">Import results</button><button data-action="downloadJson">Download results JSON</button><button data-action="copyJson">Copy results JSON</button></div></div></section>
+  <section class="toolbar"><div><p class="eyebrow">Review workspace</p><h2>Company results (${companies.length})</h2></div><button data-action="addCompany">Add company</button></section><section class="resultsLayout">${renderList()}${renderDetails()}</section>`;
 }
 
 function briefFields() { return [['industry','Industry'], ['location','Location'], ['objectives','Objectives'], ['mustHave','Must include'], ['exclude','Exclude']].map(([key,label]) => `<label>${label}<textarea data-brief="${key}" rows="${key === 'objectives' ? 4 : 2}">${esc(brief[key])}</textarea></label>`).join('') + `<label>Maximum results<input data-brief="maxResults" type="number" min="1" max="100" value="${esc(brief.maxResults)}"></label>`; }
-function companyCard(company, index) { return `<article class="card"><div class="cardHead"><input class="name" data-company="${index}" data-key="name" placeholder="Company name" value="${esc(company.name)}"><button class="ghost" data-action="removeCompany" data-index="${index}" aria-label="Remove company">Remove</button></div><div class="fields">${['website','headquarters','industry'].map(k => `<label>${k[0].toUpperCase()+k.slice(1)}<input data-company="${index}" data-key="${k}" value="${esc(company[k])}"></label>`).join('')}<label>Confidence<select data-company="${index}" data-key="confidence">${['high','medium','low'].map(v => `<option ${company.confidence === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label></div>${textArea(index,'description','Description',company.description)}${textArea(index,'fitReasons','Fit reasons (one per line)',company.fitReasons.join('\n'), true)}${textArea(index,'objectivesMatched','Objectives matched (one per line)',company.objectivesMatched.join('\n'), true)}${textArea(index,'evidenceUrls','Evidence URLs (one per line)',company.evidenceUrls.join('\n'), true)}<div class="links">${company.evidenceUrls.map((url,i) => `<a href="${esc(url)}" target="_blank" rel="noreferrer">Source ${i+1}</a>`).join('')}</div>${textArea(index,'notes','Notes',company.notes)}</article>`; }
+function renderList() {
+  return `<div class="companyList" aria-label="Imported companies">${companies.map((company, index) => `<button class="companyListItem ${index === selectedCompanyIndex ? 'active' : ''}" data-action="selectCompany" data-index="${index}">
+    <span>${esc(company.name || `Company ${index + 1}`)}</span>
+    <small>${esc(company.industry || 'No industry yet')}</small>
+    <em>${esc(company.confidence || 'medium')} confidence</em>
+  </button>`).join('')}</div>`;
+}
+function renderDetails() {
+  const company = companies[selectedCompanyIndex] || { ...emptyCompany };
+  return `<article class="companyDetail">
+    <div class="detailHeader"><div><p class="eyebrow">Selected company</p><h3>${esc(company.name || 'Untitled company')}</h3></div><button class="ghost" data-action="removeCompany" data-index="${selectedCompanyIndex}" aria-label="Remove selected company">Remove</button></div>
+    <div class="factGrid">
+      ${fact('Website', company.website ? `<a href="${esc(company.website)}" target="_blank" rel="noreferrer">${esc(company.website)}</a>` : 'Not provided')}
+      ${fact('Headquarters', esc(company.headquarters || 'Not provided'))}
+      ${fact('Industry', esc(company.industry || 'Not provided'))}
+      ${fact('Confidence', `<span class="confidence ${esc(company.confidence)}">${esc(company.confidence || 'medium')}</span>`)}
+    </div>
+    ${readBlock('Description', company.description)}
+    ${listBlock('Fit reasons', company.fitReasons)}
+    ${listBlock('Objectives matched', company.objectivesMatched)}
+    ${sourceBlock(company.evidenceUrls)}
+    ${readBlock('Notes', company.notes)}
+    <details class="editPanel"><summary>Edit company details</summary>${companyEditor(company, selectedCompanyIndex)}</details>
+  </article>`;
+}
+function fact(label, value) { return `<div class="fact"><span>${label}</span><strong>${value}</strong></div>`; }
+function readBlock(label, value) { return `<section class="readBlock"><h4>${label}</h4><p>${esc(value || 'Nothing added yet.')}</p></section>`; }
+function listBlock(label, values) {
+  const items = (Array.isArray(values) ? values : []).filter(Boolean);
+  return `<section class="readBlock"><h4>${label}</h4>${items.length ? `<ul>${items.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : '<p>Nothing added yet.</p>'}</section>`;
+}
+function sourceBlock(urls) {
+  const items = (Array.isArray(urls) ? urls : []).filter(Boolean);
+  return `<section class="readBlock"><h4>Evidence sources</h4>${items.length ? `<div class="sourceList">${items.map((url, index) => `<div class="sourceRow"><a href="${esc(url)}" target="_blank" rel="noreferrer"><span>Source ${index + 1}</span><small>${esc(url)}</small></a><button class="iconButton" data-action="copySourceUrl" data-url="${esc(url)}" aria-label="Copy source ${index + 1} URL"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h10v12H8z"></path><path d="M6 16H4V4h12v2"></path></svg></button></div>`).join('')}</div>` : '<p>No sources yet.</p>'}</section>`;
+}
+function companyEditor(company, index) {
+  return `<div class="fields">${['name','website','headquarters','industry'].map(k => `<label>${k[0].toUpperCase()+k.slice(1)}<input data-company="${index}" data-key="${k}" value="${esc(company[k])}"></label>`).join('')}<label>Confidence<select data-company="${index}" data-key="confidence">${['high','medium','low'].map(v => `<option ${company.confidence === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label></div>${textArea(index,'description','Description',company.description)}${textArea(index,'fitReasons','Fit reasons (one per line)',company.fitReasons.join('\n'), true)}${textArea(index,'objectivesMatched','Objectives matched (one per line)',company.objectivesMatched.join('\n'), true)}${textArea(index,'evidenceUrls','Evidence URLs (one per line)',company.evidenceUrls.join('\n'), true)}${textArea(index,'notes','Notes',company.notes)}`;
+}
 function textArea(i,k,label,value,list=false) { return `<label>${label}<textarea data-company="${i}" data-key="${k}" ${list ? 'data-list="true"' : ''}>${esc(value)}</textarea></label>`; }
 
 app.addEventListener('input', event => {
@@ -62,22 +101,24 @@ app.addEventListener('click', async event => {
   const button = event.target.closest('button');
   if (!button) return;
   const action = button.dataset.action;
-  if (action === 'copyPrompt') { await navigator.clipboard.writeText(promptText()); setMessage('Copied prompt to clipboard.'); }
-  if (action === 'syncJson') { jsonText = JSON.stringify(companies, null, 2); setMessage('JSON editor synced from cards.'); }
-  if (action === 'copyJson') { await navigator.clipboard.writeText(JSON.stringify(companies, null, 2)); setMessage('Copied current JSON.'); }
+  if (action === 'copyPrompt') { await navigator.clipboard.writeText(promptText()); setMessage('Generated prompt and copied it to clipboard.'); }
+  if (action === 'copyJson') { await navigator.clipboard.writeText(JSON.stringify(companies, null, 2)); setMessage('Copied results JSON.'); }
+  if (action === 'copySourceUrl') { await navigator.clipboard.writeText(button.dataset.url); setMessage('Copied source link.'); }
   if (action === 'downloadJson') { const blob = new Blob([JSON.stringify(companies, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = Object.assign(document.createElement('a'), { href: url, download: 'company-findings.json' }); a.click(); URL.revokeObjectURL(url); }
   if (action === 'importJson') {
     try {
       const parsed = JSON.parse(jsonText);
       if (!Array.isArray(parsed)) throw new Error('Top-level JSON must be an array.');
       companies = parsed.map(normalize);
+      selectedCompanyIndex = 0;
       setMessage(`Imported ${parsed.length} companies.`);
     } catch (error) {
       setMessage(`Import failed: ${error.message}`);
     }
   }
-  if (action === 'addCompany') { companies.push({ ...emptyCompany }); renderShell(); }
-  if (action === 'removeCompany') { companies.splice(Number(button.dataset.index), 1); renderShell(); }
+  if (action === 'addCompany') { companies.push({ ...emptyCompany }); selectedCompanyIndex = companies.length - 1; renderShell(); }
+  if (action === 'selectCompany') { selectedCompanyIndex = Number(button.dataset.index); renderShell(); }
+  if (action === 'removeCompany') { companies.splice(Number(button.dataset.index), 1); selectedCompanyIndex = Math.max(0, selectedCompanyIndex - 1); renderShell(); }
 });
 window.addEventListener('hashchange', renderShell);
 renderShell();
