@@ -17,14 +17,30 @@ for (const expected of [
   '#/job-search',
   'renderShell',
   'renderHome',
-  'renderJobSearchApp'
+  'renderJobSearchApp',
+  'Generate prompt',
+  'Import results',
+  'Copy results JSON',
+  'copySourceUrl',
+  'companyDetail',
+  'details',
+  'renderList'
 ]) {
   if (!appSource.includes(expected)) {
     throw new Error(`Missing sandbox behavior marker: ${expected}`);
   }
 }
 
-for (const expected of ['sandboxShell', 'sidebar', 'appPill']) {
+for (const expected of [
+  'sandboxShell',
+  'sidebar',
+  'appPill',
+  'resultsLayout',
+  'companyList',
+  'companyDetail',
+  'sourceRow',
+  'iconButton'
+]) {
   if (!styleSource.includes(expected)) {
     throw new Error(`Missing sandbox layout style: ${expected}`);
   }
