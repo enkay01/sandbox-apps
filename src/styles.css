@@ -211,6 +211,8 @@ button:hover { transform: translateY(-1px); background: var(--teal-dark); box-sh
 }
 .companyListItem {
   display: grid;
+  justify-content: stretch;
+  justify-items: start;
   gap: 6px;
   width: 100%;
   text-align: left;
@@ -220,7 +222,7 @@ button:hover { transform: translateY(-1px); background: var(--teal-dark); box-sh
   box-shadow: 0 8px 20px rgba(69, 55, 34, .06);
 }
 .companyListItem span { font-size: 1.05rem; font-weight: 900; }
-.companyListItem small { color: var(--muted); line-height: 1.35; }
+.companyListItem small { color: var(--muted); line-height: 1.35; text-align: left; }
 .companyListItem em { width: fit-content; border-radius: 999px; padding: 4px 8px; background: #e7f4f5; color: var(--teal-dark); font-style: normal; font-size: .78rem; font-weight: 850; }
 .companyListItem.active { border-color: var(--teal); background: #eef8f8; }
 .companyDetail { min-height: 520px; }
